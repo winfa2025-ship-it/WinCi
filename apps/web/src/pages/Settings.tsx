@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { api, setToken, getEngineBase, setEngineBase } from '../lib/api'
+import { api, setToken, getEngineBase, setEngineBase, DEFAULT_ENGINE_URL } from '../lib/api'
 import { getGoogleClientId, setGoogleClientIdLocal } from '../lib/googleClientId'
 
 type Props = {
@@ -17,7 +17,9 @@ export default function Settings({ status, refreshStatus, user, onLogout, onNeed
   const [msg, setMsg] = useState('')
   const [outbound, setOutbound] = useState<any>(null)
   const [whitelist, setWhitelist] = useState('')
-  const [engineUrl, setEngineUrl] = useState(() => getEngineBase())
+  const [engineUrl, setEngineUrl] = useState(() => getEngineBase() || DEFAULT_ENGINE_URL)
+  const [googleClientId, setGoogleClientId] = useState(() => getGoogleClientId())
+  const [googleEngine, setGoogleEngine] = useState(false)
 
   useEffect(() => {
     setMode(status?.mode || 'paper')
@@ -113,14 +115,15 @@ export default function Settings({ status, refreshStatus, user, onLogout, onNeed
       <div className="card" style={{ gridColumn: '1 / -1' }}>
         <h2>Engine URL（Android／遠端）</h2>
         <p className="muted">
-          手機 APK 預設連唔到電腦 localhost。請喺電腦跑引擎（端口 8787），再填
-          <code>http://你的電腦LAN_IP:8787</code>（同一 Wi‑Fi）。瀏覽器本機開發可留空。
+          預設連你網站伺服器 <code>{DEFAULT_ENGINE_URL}</code>（個人用）。
+          若要改回本機／LAN，可填 <code>http://LAN_IP:8787</code>。
         </p>
         <label className="field">API base
-          <input value={engineUrl} onChange={(e) => setEngineUrl(e.target.value)} placeholder="http://192.168.1.10:8787" autoComplete="off" />
+          <input value={engineUrl} onChange={(e) => setEngineUrl(e.target.value)} placeholder={DEFAULT_ENGINE_URL} autoComplete="off" />
         </label>
         <div className="row-form" style={{ marginTop: '0.75rem' }}>
           <button className="primary" onClick={saveEngine}>Save & reload</button>
+          <button type="button" onClick={() => { setEngineUrl(DEFAULT_ENGINE_URL); setEngineBase(DEFAULT_ENGINE_URL); setMsg('reset to hosted'); setTimeout(() => window.location.reload(), 300) }}>Reset hosted</button>
           <button type="button" onClick={() => { setEngineUrl(''); setEngineBase(null); setMsg('cleared'); setTimeout(() => window.location.reload(), 300) }}>Clear</button>
         </div>
       </div>

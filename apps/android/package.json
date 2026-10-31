@@ -1,10 +1,10 @@
 {
   "name": "winci-android",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "private": true,
   "description": "WinCi Android (Capacitor shell around the built web UI)",
   "scripts": {
-    "build:web": "npm --prefix ../web run build && rm -rf www && mkdir -p www && cp -a ../web/dist/. www/",
+    "build:web": "VITE_API_BASE=${VITE_API_BASE:-https://sitemixhk.com/winci-api} npm --prefix ../web run build && rm -rf www && mkdir -p www && cp -a ../web/dist/. www/",
     "sync": "npx cap sync android",
     "build:debug": "npm run build:web && npx cap sync android && cd android && ./gradlew assembleDebug",
     "build:release": "npm run build:web && npx cap sync android && cd android && ./gradlew assembleRelease"

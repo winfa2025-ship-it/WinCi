@@ -7,6 +7,8 @@ export ANDROID_SDK_ROOT="$ANDROID_HOME"
 export PATH="$JAVA_HOME/bin:$PATH"
 cd "$ROOT/apps/android"
 npm install
+export VITE_API_BASE="${VITE_API_BASE:-https://sitemixhk.com/winci-api}"
+echo "VITE_API_BASE=$VITE_API_BASE"
 npm run build:web
 npx cap sync android
 echo "sdk.dir=$ANDROID_HOME" > android/local.properties

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { api, getEngineBase, setEngineBase, setToken } from '../lib/api'
+import { api, DEFAULT_ENGINE_URL, getEngineBase, setEngineBase, setToken } from '../lib/api'
 import { getGoogleIdToken } from '../lib/googleAuth'
 import { getGoogleClientId, setGoogleClientIdLocal } from '../lib/googleClientId'
 import { isNativeApp } from '../lib/platform'
@@ -15,7 +15,7 @@ export default function Login({ onAuthed, onGuest }: Props) {
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
   const [msg, setMsg] = useState('')
-  const [engineUrl, setEngineUrl] = useState(() => getEngineBase())
+  const [engineUrl, setEngineUrl] = useState(() => getEngineBase() || DEFAULT_ENGINE_URL)
   const [clientIdInput, setClientIdInput] = useState(() => getGoogleClientId())
   const [engineOk, setEngineOk] = useState<boolean | null>(null)
   const [engineGoogle, setEngineGoogle] = useState(false)
@@ -24,12 +24,14 @@ export default function Login({ onAuthed, onGuest }: Props) {
   const clientId = clientIdInput.trim()
 
   async function probeEngine(base?: string) {
-    const b = (base ?? getEngineBase()).trim()
-    if (native && !b) {
+    const b = (base ?? (getEngineBase() || DEFAULT_ENGINE_URL)).trim()
+    if (!b) {
       setEngineOk(false)
       return
     }
     try {
+      // Persist so subsequent calls and Settings share the same base
+      if (!getEngineBase()) setEngineBase(b)
       const s = await api.googleStatus()
       setEngineOk(true)
       setEngineGoogle(!!s.configured)
@@ -40,7 +42,10 @@ export default function Login({ onAuthed, onGuest }: Props) {
   }
 
   useEffect(() => {
-    probeEngine()
+    const base = getEngineBase() || DEFAULT_ENGINE_URL
+    if (base && !getEngineBase()) setEngineBase(base)
+    if (base && !engineUrl) setEngineUrl(base)
+    probeEngine(base)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -62,7 +67,7 @@ export default function Login({ onAuthed, onGuest }: Props) {
     setMsg('')
     try {
       if (native && !getEngineBase()) {
-        throw new Error('請先填 Engine URL 並按「儲存連線」')
+        throw new Error('請先確認 Engine URL（預設網站伺服器）並按「儲存連線」')
       }
       const r =
         mode === 'login'
@@ -83,7 +88,7 @@ export default function Login({ onAuthed, onGuest }: Props) {
     try {
       setGoogleClientIdLocal(clientId || null)
       if (native && !getEngineBase()) {
-        throw new Error('請先填 Engine URL 並按「儲存連線」')
+        throw new Error('請先確認 Engine URL（預設網站伺服器）並按「儲存連線」')
       }
       if (!clientId) {
         throw new Error('請貼上 Google Web Client ID（下面欄位），或用電郵／Demo 登入')
@@ -111,7 +116,7 @@ export default function Login({ onAuthed, onGuest }: Props) {
     setMsg('')
     try {
       if (native && !getEngineBase()) {
-        throw new Error('請先填 Engine URL 並按「儲存連線」')
+        throw new Error('請先確認 Engine URL（預設網站伺服器）並按「儲存連線」')
       }
       const r = await api.google('demo')
       setToken(r.accessToken)
@@ -132,7 +137,7 @@ export default function Login({ onAuthed, onGuest }: Props) {
         </div>
         <h2>{mode === 'login' ? '登入' : '註冊'}</h2>
         <p className="muted">
-          {native ? 'Android APK' : 'Web'} · 電郵／Google／Demo · 紙上預設
+          {native ? 'Android APK' : 'Web'} · 電郵／Google／Demo · 紙上預設 · 引擎預設網站伺服器
         </p>
 
         <div className="card" style={{ margin: '0.75rem 0', padding: '0.75rem', background: 'var(--panel2)' }}>
@@ -142,7 +147,7 @@ export default function Login({ onAuthed, onGuest }: Props) {
             <input
               value={engineUrl}
               onChange={(e) => setEngineUrl(e.target.value)}
-              placeholder="http://192.168.1.10:8787"
+              placeholder="https://sitemixhk.com/winci-api"
               autoComplete="off"
             />
           </label>
@@ -231,7 +236,7 @@ export default function Login({ onAuthed, onGuest }: Props) {
 function friendlyErr(err: any): string {
   const raw = String(err?.message || err || '')
   if (/Failed to fetch|NetworkError|Load failed|fetch/i.test(raw)) {
-    return '連唔到引擎。檢查電腦已跑引擎、同一 Wi‑Fi、Engine URL（http://LAN_IP:8787）。'
+    return '連唔到引擎。預設係網站伺服器 https://sitemixhk.com/winci-api；檢查網絡或喺連線欄改 URL。'
   }
   // FastAPI often returns JSON {"detail":"..."}
   try {

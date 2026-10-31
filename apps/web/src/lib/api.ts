@@ -1,14 +1,37 @@
 const ENGINE_KEY = 'winci_engine_url'
 const TOKEN_KEY = 'winci_token'
 
-/** API base: Settings override → VITE_API_BASE → '' (same-origin / Vite proxy). */
+/** Public hosted engine on SiteMix (personal). Overridable in Settings. */
+export const DEFAULT_ENGINE_URL =
+  ((import.meta.env.VITE_API_BASE as string | undefined) || 'https://sitemixhk.com/winci-api').replace(
+    /\/+$/,
+    '',
+  )
+
+function looksLikeOldLanPlaceholder(url: string): boolean {
+  // Only auto-migrate the documented screenshot placeholder from v0.1.3/0.1.4.
+  // Intentional LAN URLs the user typed are kept.
+  const u = url.trim().replace(/\/+$/, '')
+  return u === 'http://192.168.1.10:8787' || u === 'http://192.168.1.10:8787/'
+}
+
+/** API base: Settings override → VITE_API_BASE / hosted default. */
 export function getEngineBase(): string {
   try {
     const saved = localStorage.getItem(ENGINE_KEY)
-    if (saved != null && saved.trim() !== '') return saved.trim().replace(/\/+$/, '')
+    if (saved != null && saved.trim() !== '') {
+      const cleaned = saved.trim().replace(/\/+$/, '')
+      // Migrate away from old LAN placeholders so APK hits the website engine
+      if (looksLikeOldLanPlaceholder(cleaned) && DEFAULT_ENGINE_URL) {
+        try {
+          localStorage.setItem(ENGINE_KEY, DEFAULT_ENGINE_URL)
+        } catch {}
+        return DEFAULT_ENGINE_URL
+      }
+      return cleaned
+    }
   } catch {}
-  const env = (import.meta.env.VITE_API_BASE as string | undefined) || ''
-  return env.replace(/\/+$/, '')
+  return DEFAULT_ENGINE_URL
 }
 
 export function setEngineBase(url: string | null) {
@@ -50,7 +73,7 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
   } catch (e: any) {
     const hint = BASE
       ? `連唔到引擎 ${BASE}`
-      : '未設 Engine URL（Android 請喺登入頁／Settings 填 http://LAN_IP:8787）'
+      : '未設 Engine URL'
     throw new Error(`${hint}：${e?.message || e}`)
   }
   if (!r.ok) {
@@ -118,6 +141,7 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ ips }),
     }),
+  health: () => req<any>('/health'),
 }
 
 export function openTicks(symbol: string, onTick: (data: any) => void, timeframe?: string): () => void {

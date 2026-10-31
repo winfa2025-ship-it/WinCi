@@ -10,8 +10,8 @@
 
 1. 下載：**[WinCi.apk](https://github.com/winfa2025-ship-it/WinCi/releases/download/v0.1.4/WinCi.apk)**（Release [v0.1.4](https://github.com/winfa2025-ship-it/WinCi/releases/tag/v0.1.4)）
 2. 用檔案管理員開啟 APK → 允許安裝
-3. 電腦同一 Wi‑Fi 跑引擎：`bash scripts/install-desktop.sh`（端口 8787）
-4. 開 App → **登入頁**填 **Engine URL** `http://你電腦的LAN_IP:8787` →「儲存連線」
+3. 引擎已托管喺網站伺服器：`https://sitemixhk.com/winci-api`（個人用；亦可用 `bash deploy/deploy.sh` 重部署）
+4. 開 App → Engine URL 預設已填好 → 引擎燈應變綠；可用電郵／Demo／Google 登入
 5. 電郵／Demo 登入；真 Google 見 [docs/GOOGLE-LOGIN.md](./docs/GOOGLE-LOGIN.md)
 
 ### 其他安裝方式

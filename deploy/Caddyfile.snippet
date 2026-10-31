@@ -1,0 +1,14 @@
+# Merge into /etc/caddy/Caddyfile inside the sitemixhk.com block.
+# Prefer handle_path so /winci-api/health → upstream /health.
+#
+# Example sitemixhk.com block:
+#
+# sitemixhk.com {
+# 	encode zstd gzip
+# 	handle_path /winci-api/* {
+# 		reverse_proxy 127.0.0.1:8787
+# 	}
+# 	handle {
+# 		reverse_proxy 127.0.0.1:8080
+# 	}
+# }

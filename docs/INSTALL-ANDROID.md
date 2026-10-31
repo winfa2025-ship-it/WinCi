@@ -10,7 +10,7 @@
 1. 下載 `WinCi.apk`
 2. 允許「安裝未知應用程式」
 3. 安裝並開啟 WinCi
-4. **登入頁**填 **Engine URL** → `http://電腦LAN_IP:8787` →「儲存連線」（引擎燈變綠）
+4. **登入頁** Engine URL 預設已係 `https://sitemixhk.com/winci-api`（網站伺服器）。開 App 應自動綠燈；舊版若仲留住 LAN IP，按「儲存連線」或清 App 資料。
 5. 用 **電郵**／**Demo** 登入；真 Google 見 [GOOGLE-LOGIN.md](./GOOGLE-LOGIN.md)
 6. 電腦同一 Wi‑Fi 跑：`bash scripts/install-desktop.sh`
 

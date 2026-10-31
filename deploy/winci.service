@@ -1,0 +1,18 @@
+[Unit]
+Description=WinCi trading engine (personal)
+After=network.target
+
+[Service]
+Type=simple
+User=winci
+Group=winci
+WorkingDirectory=/opt/winci/app
+EnvironmentFile=/opt/winci/.env
+ExecStart=/opt/winci/venv/bin/uvicorn main:app --host 127.0.0.1 --port 8787
+Restart=always
+RestartSec=3
+# Keep memory modest on 1GB VPS
+MemoryMax=250M
+
+[Install]
+WantedBy=multi-user.target
