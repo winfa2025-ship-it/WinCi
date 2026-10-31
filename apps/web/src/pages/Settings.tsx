@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { api, setToken } from '../lib/api'
+import { api, setToken, getEngineBase, setEngineBase } from '../lib/api'
 
 type Props = {
   status: any
@@ -16,6 +16,7 @@ export default function Settings({ status, refreshStatus, user, onLogout, onNeed
   const [msg, setMsg] = useState('')
   const [outbound, setOutbound] = useState<any>(null)
   const [whitelist, setWhitelist] = useState('')
+  const [engineUrl, setEngineUrl] = useState(() => getEngineBase())
 
   useEffect(() => {
     setMode(status?.mode || 'paper')
@@ -68,6 +69,13 @@ export default function Settings({ status, refreshStatus, user, onLogout, onNeed
     }
   }
 
+  function saveEngine() {
+    setEngineBase(engineUrl.trim() || null)
+    setMsg(engineUrl.trim() ? `Engine URL → ${engineUrl.trim().replace(/\/+$/, '')}` : 'Engine URL cleared（用同源／Vite proxy）')
+    // Force reload so SSE reconnects with new base
+    setTimeout(() => window.location.reload(), 400)
+  }
+
   function logout() {
     setToken(null)
     onLogout()
@@ -88,6 +96,21 @@ export default function Settings({ status, refreshStatus, user, onLogout, onNeed
         </div>
         <p className="muted" style={{ marginTop: '0.5rem' }}>綠＝已連接／有 key；紅＝未登入或未設定。</p>
       </div>
+      <div className="card" style={{ gridColumn: '1 / -1' }}>
+        <h2>Engine URL（Android／遠端）</h2>
+        <p className="muted">
+          手機 APK 預設連唔到電腦 localhost。請喺電腦跑引擎（端口 8787），再填
+          <code>http://你的電腦LAN_IP:8787</code>（同一 Wi‑Fi）。瀏覽器本機開發可留空。
+        </p>
+        <label className="field">API base
+          <input value={engineUrl} onChange={(e) => setEngineUrl(e.target.value)} placeholder="http://192.168.1.10:8787" autoComplete="off" />
+        </label>
+        <div className="row-form" style={{ marginTop: '0.75rem' }}>
+          <button className="primary" onClick={saveEngine}>Save & reload</button>
+          <button type="button" onClick={() => { setEngineUrl(''); setEngineBase(null); setMsg('cleared'); setTimeout(() => window.location.reload(), 300) }}>Clear</button>
+        </div>
+      </div>
+
       <div className="card">
         <h2>Account</h2>
         {user ? (

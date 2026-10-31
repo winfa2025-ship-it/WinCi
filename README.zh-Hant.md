@@ -2,6 +2,23 @@
 
 海琋自用加密貨幣短炒儀表板。
 
+## 安裝（Android APK）
+
+> **zip／源碼 ≠ 安裝包。** GitHub 的 Source code zip 係源碼，唔會自動安裝。
+>
+> **要安裝請下載 APK**，喺手機開啟並允許「未知來源／安裝未知應用程式」。
+
+1. 下載：**[WinCi.apk](https://github.com/winfa2025-ship-it/WinCi/releases/download/v0.1.3/WinCi.apk)**（Release [v0.1.3](https://github.com/winfa2025-ship-it/WinCi/releases/tag/v0.1.3)）
+2. 用檔案管理員開啟 APK → 允許安裝
+3. 開 App → **Settings → Engine URL** 填 `http://你電腦的LAN_IP:8787`（電腦要先跑引擎，同一 Wi‑Fi）
+4. 電腦跑引擎：`bash scripts/install-desktop.sh` 或見下方「點跑」
+
+### 其他安裝方式
+
+- **電腦一鍵**：`bash scripts/install-desktop.sh` → 瀏覽器開 http://127.0.0.1:5173
+- **PWA 加到主畫面**：用 Chrome／Edge 開上述網址 → 選單 →「安裝應用程式」或「加到主畫面」
+- **自己編譯 APK**：需要 JDK + Android SDK，然後 `bash scripts/build-android-apk.sh`
+
 ## 功能
 
 - 深色交易 UI（PWA）：行情、圖表 stub、下單（數量＋價錢）、機械人／**AutoEarn**、**100 信號板**、持倉、設定

@@ -1,0 +1,18 @@
+{
+  "name": "winci-android",
+  "version": "0.1.3",
+  "private": true,
+  "description": "WinCi Android (Capacitor shell around the built web UI)",
+  "scripts": {
+    "build:web": "npm --prefix ../web run build && rm -rf www && mkdir -p www && cp -a ../web/dist/. www/",
+    "sync": "npx cap sync android",
+    "build:debug": "npm run build:web && npx cap sync android && cd android && ./gradlew assembleDebug",
+    "build:release": "npm run build:web && npx cap sync android && cd android && ./gradlew assembleRelease"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.6.9",
+    "@capacitor/app": "^7.1.2",
+    "@capacitor/cli": "^7.6.9",
+    "@capacitor/core": "^7.6.9"
+  }
+}

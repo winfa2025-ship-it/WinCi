@@ -27,7 +27,7 @@ class Settings(BaseSettings):
 
     ENGINE_HOST: str = "0.0.0.0"
     ENGINE_PORT: int = 8787
-    CORS_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173"
+    CORS_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173,https://localhost,capacitor://localhost,http://localhost"
 
     @property
     def cors_list(self) -> list[str]:

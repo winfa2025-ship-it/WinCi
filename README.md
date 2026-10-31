@@ -16,6 +16,18 @@ Personal-use crypto **short-trading** dashboard for Hoi (海琋).
 
 中文說明見 [README.zh-Hant.md](./README.zh-Hant.md) · 產品設計 [docs/PRODUCT.md](./docs/PRODUCT.md)
 
+
+## Install (Android APK)
+
+> **Source zip is not an installer.** Download the APK from [Release v0.1.3](https://github.com/winfa2025-ship-it/WinCi/releases/tag/v0.1.3):
+> **[WinCi.apk](https://github.com/winfa2025-ship-it/WinCi/releases/download/v0.1.3/WinCi.apk)**
+>
+> On Android: open the APK and allow **Install unknown apps**. In the app set **Settings → Engine URL** to `http://YOUR_PC_LAN_IP:8787` (run the engine on your PC first).
+
+Desktop one-click: `bash scripts/install-desktop.sh` · Rebuild APK: `bash scripts/build-android-apk.sh` · Capacitor project: `apps/android` (`com.winci.app`).
+
+中文安裝說明見 [README.zh-Hant.md](./README.zh-Hant.md)。
+
 ## Quick start
 
 ```bash

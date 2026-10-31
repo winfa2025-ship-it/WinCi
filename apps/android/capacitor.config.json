@@ -1,0 +1,13 @@
+{
+  "appId": "com.winci.app",
+  "appName": "WinCi",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https",
+    "cleartext": true
+  },
+  "android": {
+    "allowMixedContent": true,
+    "webContentsDebuggingEnabled": true
+  }
+}

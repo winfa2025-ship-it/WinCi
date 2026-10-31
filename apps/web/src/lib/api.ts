@@ -1,5 +1,22 @@
-const BASE = import.meta.env.VITE_API_BASE || ''
+const ENGINE_KEY = 'winci_engine_url'
 const TOKEN_KEY = 'winci_token'
+
+/** API base: Settings override → VITE_API_BASE → '' (same-origin / Vite proxy). */
+export function getEngineBase(): string {
+  try {
+    const saved = localStorage.getItem(ENGINE_KEY)
+    if (saved != null && saved.trim() !== '') return saved.trim().replace(/\/+$/, '')
+  } catch {}
+  const env = (import.meta.env.VITE_API_BASE as string | undefined) || ''
+  return env.replace(/\/+$/, '')
+}
+
+export function setEngineBase(url: string | null) {
+  try {
+    if (url == null || url.trim() === '') localStorage.removeItem(ENGINE_KEY)
+    else localStorage.setItem(ENGINE_KEY, url.trim().replace(/\/+$/, ''))
+  } catch {}
+}
 
 export function getToken(): string | null {
   try {
@@ -23,6 +40,7 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
     ...(init?.headers as Record<string, string> || {}),
   }
   if (token) headers.Authorization = `Bearer ${token}`
+  const BASE = getEngineBase()
   const r = await fetch(`${BASE}${path}`, {
     ...init,
     headers,
@@ -92,6 +110,7 @@ export const api = {
 export function openTicks(symbol: string, onTick: (data: any) => void, timeframe?: string): () => void {
   const qs = new URLSearchParams({ symbol })
   if (timeframe) qs.set('timeframe', timeframe)
+  const BASE = getEngineBase()
   const es = new EventSource(`${BASE}/api/sse/ticks?${qs.toString()}`)
   es.addEventListener('tick', (ev) => {
     try {

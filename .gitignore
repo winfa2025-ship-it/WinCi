@@ -19,3 +19,15 @@ htmlcov/
 data/
 *.db
 services/engine/data/
+
+# Android / Capacitor
+apps/android/node_modules/
+apps/android/www/
+apps/android/android/.gradle/
+apps/android/android/app/build/
+apps/android/android/build/
+apps/android/android/local.properties
+apps/android/android/capacitor-cordova-android-plugins/
+*.apk
+*.aab
+dist/*.apk
