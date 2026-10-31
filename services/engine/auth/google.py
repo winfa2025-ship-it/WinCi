@@ -1,10 +1,26 @@
-"""Google Identity ID-token verify — real when GOOGLE_CLIENT_ID set, else demo stub."""
+"""Google Identity ID-token verify — real when client id set, else demo stub."""
 from __future__ import annotations
 import base64
 import json
 from typing import Optional
 
 import httpx
+
+# Runtime override (Settings / POST /auth/google/client-id); takes precedence when non-empty.
+_runtime_client_id: str = ""
+
+
+def get_effective_client_id(env_client_id: str) -> str:
+    rid = (_runtime_client_id or "").strip()
+    if rid:
+        return rid
+    return (env_client_id or "").strip()
+
+
+def set_runtime_client_id(client_id: str) -> str:
+    global _runtime_client_id
+    _runtime_client_id = (client_id or "").strip()
+    return _runtime_client_id
 
 
 async def verify_google_credential(
@@ -17,7 +33,8 @@ async def verify_google_credential(
     With client_id: verifies via Google tokeninfo endpoint.
     """
     cred = (credential or "").strip()
-    if not client_id:
+    effective = (client_id or "").strip()
+    if not effective:
         # Demo / stub path — works without OAuth keys
         if cred.lower() in ("demo", "demo-login", ""):
             return {
@@ -52,7 +69,9 @@ async def verify_google_credential(
                 }
         except Exception:
             pass
-        raise ValueError("demo mode: use credential 'demo' or set GOOGLE_CLIENT_ID")
+        raise ValueError(
+            "未設定 GOOGLE_CLIENT_ID：可用 credential 'demo'，或喺 Settings／.env 設定 Web Client ID"
+        )
 
     # Real verification via Google tokeninfo
     async with httpx.AsyncClient(timeout=10.0) as client:
@@ -61,11 +80,13 @@ async def verify_google_credential(
             params={"id_token": cred},
         )
     if r.status_code != 200:
-        raise ValueError("invalid Google credential")
+        raise ValueError("invalid Google credential（token 無效或過期）")
     data = r.json()
     aud = data.get("aud")
-    if aud != client_id:
-        raise ValueError("Google token audience mismatch")
+    if aud != effective:
+        raise ValueError(
+            f"Google token audience mismatch（token aud ≠ Client ID）。請確認 App 同引擎用同一個 Web Client ID。"
+        )
     if data.get("email_verified") in ("false", False):
         raise ValueError("Google email not verified")
     email = data.get("email")

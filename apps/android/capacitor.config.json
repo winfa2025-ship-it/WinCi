@@ -9,5 +9,11 @@
   "android": {
     "allowMixedContent": true,
     "webContentsDebuggingEnabled": true
+  },
+  "plugins": {
+    "GoogleAuth": {
+      "scopes": ["profile", "email"],
+      "forceCodeForRefreshToken": false
+    }
   }
 }

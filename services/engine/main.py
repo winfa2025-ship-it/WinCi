@@ -30,7 +30,7 @@ from timeframes import (
     candles_stub,
 )
 
-APP_VERSION = "0.1.2"
+APP_VERSION = "0.1.4"
 
 settings = get_settings()
 paper = PaperExchange(

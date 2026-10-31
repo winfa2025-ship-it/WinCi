@@ -3,7 +3,7 @@
 Personal-use crypto **short-trading** dashboard for Hoi (海琋).
 
 - Dark PWA UI: Markets · Chart stub · Order ticket · Bots / **AutoEarn** · **100 signal board** · Portfolio · Settings
-- **Email + Google login** (local JWT; Demo Google when `GOOGLE_CLIENT_ID` empty)
+- **Email + Google login** (local JWT; Android uses native Google Sign-In; Demo/email when Client ID empty — see [docs/GOOGLE-LOGIN.md](./docs/GOOGLE-LOGIN.md))
 - Engine: FastAPI paper exchange + momentum + AutoEarn bots + SSE ticks
 - Optional **DeepSeek** AI commentary / signal boost (`https://api.deepseek.com`)
 - Optional Binance keys for future LIVE (v0.1.x stub — paper works without keys)
@@ -19,10 +19,10 @@ Personal-use crypto **short-trading** dashboard for Hoi (海琋).
 
 ## Install (Android APK)
 
-> **Source zip is not an installer.** Download the APK from [Release v0.1.3](https://github.com/winfa2025-ship-it/WinCi/releases/tag/v0.1.3):
-> **[WinCi.apk](https://github.com/winfa2025-ship-it/WinCi/releases/download/v0.1.3/WinCi.apk)**
+> **Source zip is not an installer.** Download the APK from [Release v0.1.4](https://github.com/winfa2025-ship-it/WinCi/releases/tag/v0.1.4):
+> **[WinCi.apk](https://github.com/winfa2025-ship-it/WinCi/releases/download/v0.1.4/WinCi.apk)**
 >
-> On Android: open the APK and allow **Install unknown apps**. In the app set **Settings → Engine URL** to `http://YOUR_PC_LAN_IP:8787` (run the engine on your PC first).
+> On Android: open the APK and allow **Install unknown apps**. On the **login screen** set **Engine URL** to `http://YOUR_PC_LAN_IP:8787` (run the engine on your PC first). Real Google: [docs/GOOGLE-LOGIN.md](./docs/GOOGLE-LOGIN.md).
 
 Desktop one-click: `bash scripts/install-desktop.sh` · Rebuild APK: `bash scripts/build-android-apk.sh` · Capacitor project: `apps/android` (`com.winci.app`).
 
@@ -71,7 +71,8 @@ Copy `.env.example` → `.env`:
 
 - `POST /auth/register` · `POST /auth/login` · `POST /auth/google` · `GET /auth/me`
 - Email/password stored in local SQLite (`data/winci_users.db`, gitignored)
-- Google: real ID-token verify when `GOOGLE_CLIENT_ID` is set; otherwise credential `demo` works for personal demo
+- Google: native Sign-In on Android + GIS on web; ID-token verify when Web Client ID is set (`.env` / Settings / `POST /auth/google/client-id`); otherwise Demo login
+- Setup guide: [docs/GOOGLE-LOGIN.md](./docs/GOOGLE-LOGIN.md) (package `com.winci.app`, debug SHA-1)
 
 ## Short-trade timeframes
 

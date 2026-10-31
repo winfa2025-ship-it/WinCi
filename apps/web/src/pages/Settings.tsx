@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api, setToken, getEngineBase, setEngineBase } from '../lib/api'
+import { getGoogleClientId, setGoogleClientIdLocal } from '../lib/googleClientId'
 
 type Props = {
   status: any
@@ -21,6 +22,7 @@ export default function Settings({ status, refreshStatus, user, onLogout, onNeed
   useEffect(() => {
     setMode(status?.mode || 'paper')
     api.deepseekStatus().then(setDs).catch(() => {})
+    api.googleStatus().then((s) => setGoogleEngine(!!s.configured)).catch(() => setGoogleEngine(false))
     const ips = status?.binanceWhitelistIps || status?.binance?.whitelistIps || []
     if (Array.isArray(ips) && ips.length) setWhitelist(ips.join(', '))
     else api.getWhitelist().then((w) => setWhitelist(w.raw || '')).catch(() => {})
@@ -76,6 +78,18 @@ export default function Settings({ status, refreshStatus, user, onLogout, onNeed
     setTimeout(() => window.location.reload(), 400)
   }
 
+  async function saveGoogleClient() {
+    const id = googleClientId.trim()
+    setGoogleClientIdLocal(id || null)
+    try {
+      const r = await api.setGoogleClientId(id)
+      setGoogleEngine(!!r.configured)
+      setMsg(id ? 'Google Web Client ID 已存（本機 + 引擎 session）' : '已清除 Google Client ID')
+    } catch (e: any) {
+      setMsg(id ? `本機已存 Client ID；引擎同步失敗：${e.message || e}` : '已清除本機 Client ID')
+    }
+  }
+
   function logout() {
     setToken(null)
     onLogout()
@@ -108,6 +122,23 @@ export default function Settings({ status, refreshStatus, user, onLogout, onNeed
         <div className="row-form" style={{ marginTop: '0.75rem' }}>
           <button className="primary" onClick={saveEngine}>Save & reload</button>
           <button type="button" onClick={() => { setEngineUrl(''); setEngineBase(null); setMsg('cleared'); setTimeout(() => window.location.reload(), 300) }}>Clear</button>
+        </div>
+      </div>
+
+      <div className="card" style={{ gridColumn: '1 / -1' }}>
+        <h2>Google 登入（OAuth）</h2>
+        <p className="muted">
+          貼 <strong>Web application</strong> Client ID（…apps.googleusercontent.com）。
+          Android 另要喺 Google Cloud 建 <strong>Android</strong> client：package <code>com.winci.app</code>，
+          debug SHA-1 見 <code>docs/GOOGLE-LOGIN.md</code>。WebView 唔支援 Google 彈窗，APK 用原生登入。
+        </p>
+        <p>引擎已設 Client ID：<strong>{String(googleEngine || !!status?.googleConfigured)}</strong></p>
+        <label className="field">VITE / Web Client ID
+          <input value={googleClientId} onChange={(e) => setGoogleClientId(e.target.value)} placeholder="xxxxx.apps.googleusercontent.com" autoComplete="off" />
+        </label>
+        <div className="row-form" style={{ marginTop: '0.75rem' }}>
+          <button className="primary" onClick={saveGoogleClient}>Save Google Client ID</button>
+          <button type="button" onClick={() => { setGoogleClientId(''); setGoogleClientIdLocal(null); api.setGoogleClientId('').then(() => setGoogleEngine(false)).catch(() => {}) }}>Clear</button>
         </div>
       </div>
 

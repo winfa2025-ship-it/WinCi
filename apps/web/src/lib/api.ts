@@ -41,10 +41,18 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
   }
   if (token) headers.Authorization = `Bearer ${token}`
   const BASE = getEngineBase()
-  const r = await fetch(`${BASE}${path}`, {
-    ...init,
-    headers,
-  })
+  let r: Response
+  try {
+    r = await fetch(`${BASE}${path}`, {
+      ...init,
+      headers,
+    })
+  } catch (e: any) {
+    const hint = BASE
+      ? `連唔到引擎 ${BASE}`
+      : '未設 Engine URL（Android 請喺登入頁／Settings 填 http://LAN_IP:8787）'
+    throw new Error(`${hint}：${e?.message || e}`)
+  }
   if (!r.ok) {
     const t = await r.text()
     throw new Error(t || r.statusText)
@@ -98,6 +106,11 @@ export const api = {
     }),
   me: () => req<any>('/auth/me'),
   googleStatus: () => req<any>('/auth/google/status'),
+  setGoogleClientId: (client_id: string) =>
+    req<any>('/auth/google/client-id', {
+      method: 'POST',
+      body: JSON.stringify({ client_id }),
+    }),
   outboundIp: () => req<any>('/api/binance/outbound-ip'),
   getWhitelist: () => req<any>('/api/binance/whitelist'),
   setWhitelist: (ips: string) =>
