@@ -10,6 +10,7 @@ Personal-use crypto **short-trading** dashboard for Hoi (海琋).
 - **Binance IP whitelist** reminder + outbound IP detector
 - Min notional **$1 USD** · max position · daily loss kill-switch
 - **Connection indicators**: green = linked, red = missing (Auth / Binance / DeepSeek / Bot)
+- **Short-trade timeframes**: selectable **1m / 5m / 15m** (chart candles, signal cadence, Momentum / AutoEarn)
 
 > **Not financial advice.** Personal use only. Default **PAPER**. AutoEarn does **not** guarantee profit（唔保證盈利／過去表現唔代表將來）. Never commit `.env` secrets.
 
@@ -60,6 +61,14 @@ Copy `.env.example` → `.env`:
 - Email/password stored in local SQLite (`data/winci_users.db`, gitignored)
 - Google: real ID-token verify when `GOOGLE_CLIENT_ID` is set; otherwise credential `demo` works for personal demo
 
+## Short-trade timeframes
+
+Top bar + Chart / Bots / Signals: pick **1m**, **5m**, or **15m**.
+
+- Engine: `GET/POST /api/timeframe`, `GET /api/candles?timeframe=`
+- Signals re-bucket on the selected TF; bots sync cooldown ≈ one bar
+- SSE ticks include `timeframe` + recent candle stubs
+
 ## AutoEarn
 
 Opt-in bot on the **Bots** tab: position size USD, max daily loss %, kill switch. Extends momentum consensus. **No guaranteed profit.** Default paper.
@@ -87,18 +96,18 @@ Header and Settings show status dots:
 
 ## MVP vs later
 
-| Now (v0.1.1) | Later |
+| Now (v0.1.2) | Later |
 |--------------|--------|
 | Paper simulator + momentum + AutoEarn | Real Binance spot via ccxt |
 | Email / Demo Google JWT | Full GIS button when client id set |
 | 100 deterministic mock signals | Real indicators / funding / news |
-| Chart sparkline stub | TradingView |
+| Chart OHLC stub + 1m/5m/15m | TradingView |
 | DeepSeek optional commentary | Richer AI tools |
 
 ## Download
 
 - Clone: https://github.com/winfa2025-ship-it/WinCi
-- Source zip: GitHub **Release v0.1.1** assets
+- Source zip: GitHub **Release v0.1.2** assets
 
 ## Risk note
 

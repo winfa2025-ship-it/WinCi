@@ -1,9 +1,16 @@
 import { useState } from 'react'
 import { api } from '../lib/api'
+import TimeframePicker, { type Timeframe } from '../components/TimeframePicker'
 
-type Props = { symbol: string; signals: any[]; consensus: any }
+type Props = {
+  symbol: string
+  signals: any[]
+  consensus: any
+  timeframe: string
+  setTimeframe: (tf: Timeframe) => void
+}
 
-export default function Signals({ symbol, signals, consensus }: Props) {
+export default function Signals({ symbol, signals, consensus, timeframe, setTimeframe }: Props) {
   const [commentary, setCommentary] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -22,12 +29,16 @@ export default function Signals({ symbol, signals, consensus }: Props) {
   return (
     <div className="grid">
       <div className="card">
-        <h2>100 Signal board · {symbol}</h2>
+        <div className="card-head">
+          <h2>100 Signal board · {symbol} · {timeframe}</h2>
+          <TimeframePicker value={timeframe} onChange={setTimeframe} label="短炒" />
+        </div>
         <p>
           Consensus <strong className={(consensus?.score || 0) >= 0 ? 'up' : 'down'}>{consensus?.score ?? '—'}</strong>
           {' '}→ {consensus?.action}
           {consensus?.aiBoost ? ` (AI boost ${consensus.aiBoost})` : ''}
         </p>
+        <p className="muted">信號節奏跟住 {timeframe} K 線 bucket（唔係每秒亂跳）。</p>
         <div className="row-form" style={{ marginBottom: '0.75rem' }}>
           <button className="primary" disabled={busy} onClick={() => askAi(false)}>DeepSeek 短評</button>
           <button disabled={busy} onClick={() => askAi(true)}>短評 + AI boost</button>
@@ -35,7 +46,7 @@ export default function Signals({ symbol, signals, consensus }: Props) {
         {commentary && <pre style={{ whiteSpace: 'pre-wrap', background: '#0a0e13', padding: '0.75rem', borderRadius: 8 }}>{commentary}</pre>}
       </div>
       <div className="card">
-        <h3>{signals.length || 100} analyzers</h3>
+        <h3>{signals.length || 100} analyzers · {timeframe}</h3>
         <div className="signal-board">
           {(signals.length ? signals : Array.from({ length: 100 }, (_, i) => ({ id: i + 1, name: `Slot_${i + 1}`, score: 0, category: '—' }))).map((s) => (
             <div className="sig" key={s.id}>

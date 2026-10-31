@@ -13,10 +13,11 @@ class BotConfig:
     name: str = "Simple Momentum"
     enabled: bool = False
     symbol: str = "BTCUSDT"
+    timeframe: str = "1m"  # 1m | 5m | 15m
     buy_threshold: float = 25.0
     sell_threshold: float = -25.0
     order_notional_usd: float = 25.0
-    cooldown_sec: float = 30.0
+    cooldown_sec: float = 60.0  # default ≈ 1m bar
     last_action_ts: float = 0.0
     last_action: str = "idle"
     last_error: str = ""
@@ -35,6 +36,13 @@ class MomentumBot:
             self.cfg.last_action = "stopped"
 
     def update(self, **kwargs):
+        if "timeframe" in kwargs and kwargs["timeframe"] is not None:
+            from timeframes import normalize_tf, default_bot_cooldown
+            tf = normalize_tf(str(kwargs["timeframe"]))
+            kwargs["timeframe"] = tf
+            # only auto-sync cooldown when caller did not set it explicitly
+            if "cooldown_sec" not in kwargs:
+                kwargs["cooldown_sec"] = default_bot_cooldown(tf)
         for k, v in kwargs.items():
             if hasattr(self.cfg, k) and k not in ("id",):
                 setattr(self.cfg, k, v)

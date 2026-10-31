@@ -1,11 +1,16 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
+import TimeframePicker, { type Timeframe } from '../components/TimeframePicker'
 
-type Props = { tick: any }
+type Props = {
+  tick: any
+  timeframe: string
+  setTimeframe: (tf: Timeframe) => void
+}
 
 const DISCLAIMER = '唔保證盈利／過去表現唔代表將來'
 
-export default function Bots({ tick }: Props) {
+export default function Bots({ tick, timeframe, setTimeframe }: Props) {
   const [bot, setBot] = useState<any>(tick?.bot)
   const [auto, setAuto] = useState<any>(tick?.autoearn)
   const [msg, setMsg] = useState('')
@@ -18,6 +23,24 @@ export default function Bots({ tick }: Props) {
     if (tick?.autoearn?.order_notional_usd != null) setPosSize(String(tick.autoearn.order_notional_usd))
     if (tick?.autoearn?.max_daily_loss_pct != null) setMaxLoss(String(tick.autoearn.max_daily_loss_pct))
   }, [tick?.bot, tick?.autoearn])
+
+  async function applyTf(tf: Timeframe) {
+    setTimeframe(tf)
+    // also patch both bots explicitly so status reflects TF immediately
+    try {
+      if (bot?.id) {
+        const next = await api.patchBot(bot.id, { timeframe: tf })
+        setBot(next)
+      }
+      if (auto?.id) {
+        const next = await api.patchBot(auto.id, { timeframe: tf })
+        setAuto(next)
+      }
+      setMsg(`短炒時框 → ${tf}（bot cooldown ≈ 1 根 K）`)
+    } catch (e: any) {
+      setMsg(String(e.message || e))
+    }
+  }
 
   async function toggleMomentum() {
     if (!bot) return
@@ -50,6 +73,7 @@ export default function Bots({ tick }: Props) {
     const next = await api.patchBot(auto.id, {
       position_size_usd: Number(posSize),
       max_daily_loss_pct: Number(maxLoss),
+      timeframe,
     })
     setAuto(next)
     setMsg('AutoEarn 參數已存')
@@ -68,10 +92,16 @@ export default function Bots({ tick }: Props) {
     setMsg('Kill switches reset')
   }
 
+  const botTf = bot?.timeframe || timeframe
+  const autoTf = auto?.timeframe || timeframe
+
   return (
     <div className="grid cols-2">
       <div className="card">
-        <h2>Momentum bot</h2>
+        <div className="card-head">
+          <h2>Momentum bot</h2>
+          <TimeframePicker value={botTf} onChange={applyTf} label="短炒" />
+        </div>
         {!bot ? <p className="muted">Loading…</p> : (
           <>
             <div className="grid cols-3">
@@ -79,7 +109,9 @@ export default function Bots({ tick }: Props) {
               <div><div className="muted">Symbol</div><div>{bot.symbol}</div></div>
               <div><div className="muted">Last</div><div>{bot.last_action}</div></div>
             </div>
-            <p className="muted">buy ≥ {bot.buy_threshold} · sell ≤ {bot.sell_threshold} · cooldown {bot.cooldown_sec}s</p>
+            <p className="muted">
+              TF {botTf} · buy ≥ {bot.buy_threshold} · sell ≤ {bot.sell_threshold} · cooldown {bot.cooldown_sec}s
+            </p>
             <div className="row-form" style={{ marginTop: '0.75rem' }}>
               <label className="field">Order notional USD
                 <input defaultValue={bot.order_notional_usd} onBlur={(e) => saveNotional(e.target.value)} />
@@ -94,10 +126,13 @@ export default function Bots({ tick }: Props) {
       </div>
 
       <div className="card">
-        <h2>AutoEarn（自動幫你做單）</h2>
+        <div className="card-head">
+          <h2>AutoEarn（自動幫你做單）</h2>
+          <TimeframePicker value={autoTf} onChange={applyTf} label="短炒" />
+        </div>
         <div className="disclaimer">{DISCLAIMER}</div>
         <p className="muted" style={{ marginTop: '0.5rem' }}>
-          Opt-in 機械人（延伸 momentum）。預設紙上；有倉位美金、日虧 %、kill switch。
+          Opt-in 機械人（延伸 momentum）。時框 1m／5m／15m。預設紙上；有倉位美金、日虧 %、kill switch。
           <strong> 唔保證賺錢。</strong>
         </p>
         {!auto ? <p className="muted">Loading…</p> : (
@@ -105,7 +140,7 @@ export default function Bots({ tick }: Props) {
             <div className="grid cols-3" style={{ marginTop: '0.75rem' }}>
               <div><div className="muted">Status</div><div>{auto.enabled ? 'ON' : 'OFF'}{auto.kill_switch ? ' · KILL' : ''}</div></div>
               <div><div className="muted">Last</div><div>{auto.last_action}</div></div>
-              <div><div className="muted">Symbol</div><div>{auto.symbol}</div></div>
+              <div><div className="muted">TF</div><div>{autoTf}</div></div>
             </div>
             <div className="row-form" style={{ marginTop: '0.75rem' }}>
               <label className="field">Position size USD

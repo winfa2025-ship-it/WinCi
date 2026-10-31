@@ -8,6 +8,7 @@ import Signals from './pages/Signals'
 import Portfolio from './pages/Portfolio'
 import Settings from './pages/Settings'
 import Login from './pages/Login'
+import TimeframePicker, { type Timeframe } from './components/TimeframePicker'
 
 type Tab = 'markets' | 'chart' | 'order' | 'bots' | 'signals' | 'portfolio' | 'settings'
 
@@ -33,6 +34,7 @@ function StatusDot({ ok, label }: { ok: boolean; label: string }) {
 export default function App() {
   const [tab, setTab] = useState<Tab>('markets')
   const [symbol, setSymbol] = useState('BTCUSDT')
+  const [timeframe, setTimeframe] = useState<Timeframe>('1m')
   const [tick, setTick] = useState<any>(null)
   const [signals, setSignals] = useState<any[]>([])
   const [status, setStatus] = useState<any>(null)
@@ -43,7 +45,12 @@ export default function App() {
   const [guest, setGuest] = useState(false)
 
   useEffect(() => {
-    api.status().then(setStatus).catch((e) => setErr(String(e.message || e)))
+    api.status().then((s) => {
+      setStatus(s)
+      if (s?.timeframe === '1m' || s?.timeframe === '5m' || s?.timeframe === '15m') {
+        setTimeframe(s.timeframe)
+      }
+    }).catch((e) => setErr(String(e.message || e)))
     const t = getToken()
     if (!t) {
       setAuthChecked(true)
@@ -58,13 +65,24 @@ export default function App() {
 
   useEffect(() => {
     if (showLogin && !guest && !user) return
-    const stop = openTicks(symbol, setTick)
-    api.signals(symbol).then((d) => setSignals(d.signals || [])).catch(() => {})
+    const stop = openTicks(symbol, setTick, timeframe)
+    api.signals(symbol, timeframe).then((d) => setSignals(d.signals || [])).catch(() => {})
     const iv = setInterval(() => {
-      api.signals(symbol).then((d) => setSignals(d.signals || [])).catch(() => {})
+      api.signals(symbol, timeframe).then((d) => setSignals(d.signals || [])).catch(() => {})
     }, 15000)
     return () => { stop(); clearInterval(iv) }
-  }, [symbol, showLogin, guest, user])
+  }, [symbol, timeframe, showLogin, guest, user])
+
+  async function changeTf(tf: Timeframe) {
+    setTimeframe(tf)
+    try {
+      const r = await api.setTimeframe(tf)
+      setTick((prev: any) => prev ? { ...prev, timeframe: tf, bot: r.bot, autoearn: r.autoearn } : prev)
+      api.status().then(setStatus).catch(() => {})
+    } catch (e: any) {
+      setErr(String(e.message || e))
+    }
+  }
 
   const mode = tick?.mode || status?.mode || 'paper'
   const consensus = tick?.consensus
@@ -77,7 +95,8 @@ export default function App() {
 
   const body = useMemo(() => {
     const common = {
-      symbol, setSymbol, tick, signals, consensus, portfolio, status,
+      symbol, setSymbol, timeframe, setTimeframe: changeTf,
+      tick, signals, consensus, portfolio, status,
       refreshStatus: () => api.status().then(setStatus),
       user,
       onLogout: () => { setUser(null); setGuest(false); setShowLogin(true) },
@@ -92,7 +111,7 @@ export default function App() {
       case 'portfolio': return <Portfolio {...common} />
       case 'settings': return <Settings {...common} />
     }
-  }, [tab, symbol, tick, signals, consensus, portfolio, status, user])
+  }, [tab, symbol, timeframe, tick, signals, consensus, portfolio, status, user])
 
   if (!authChecked) {
     return <div className="auth-wrap"><div className="muted">Loading…</div></div>
@@ -122,11 +141,12 @@ export default function App() {
           <div>
             <strong>個人短炒儀表板</strong>
             <div className="muted" style={{ fontSize: '0.85rem' }}>
-              {symbol} · consensus {consensus?.score ?? '—'} · {consensus?.action ?? '—'}
+              {symbol} · {timeframe} · consensus {consensus?.score ?? '—'} · {consensus?.action ?? '—'}
               {user ? ` · ${user.email}` : ' · 訪客'}
             </div>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            <TimeframePicker value={timeframe} onChange={changeTf} size="sm" label="短炒" />
             <span className={`pill ${mode === 'live' ? 'live' : 'paper'}`}>{mode.toUpperCase()}</span>
             <span className="pill">min $1</span>
             {portfolio?.killSwitch && <span className="pill live">KILL</span>}

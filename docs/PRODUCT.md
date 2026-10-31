@@ -9,9 +9,9 @@
 | Screen | Purpose |
 |--------|---------|
 | **Markets** | 交易對列表、24h 漲跌、即時價（紙上模擬 tick 或幣安） |
-| **Chart** | K 線 stub（MVP 用簡易 sparkline；v2 接 TradingView widget） |
+| **Chart** | K 線 stub（**1m／5m／15m** 可選；MVP OHLC stub；v2 TradingView） |
 | **Order** | 限價／市價買入賣出：數量 + 價錢；最低名義 $1 USD |
-| **Bots** | Momentum + **AutoEarn**：啟停、倉位美金、日虧 %、kill-switch；免責「唔保證盈利」 |
+| **Bots** | Momentum + **AutoEarn**：短炒時框 1m／5m／15m、啟停、倉位美金、日虧 %、kill-switch；免責「唔保證盈利」 |
 | **Login** | 電郵註冊／登入、Google（或 Demo Google）、訪客紙上 |
 | **Signals** | 100 個具名分析器分數板 + 共識分數 |
 | **Portfolio** | 持倉、未實現盈虧、成交紀錄、名義金額 |
@@ -59,6 +59,7 @@ v2：多策略（mean-reversion、grid、DCA）、多交易對、回測。
 | Phase | Scope |
 |-------|--------|
 | **v0.1.1** | Paper + momentum + AutoEarn、email/Google auth、Binance IP whitelist helper、connection dots、DeepSeek optional |
+| **v0.1.2** | Short-trade TF **1m／5m／15m**（chart + bots + signals cadence + candle stubs） |
 | **v0.2** | 真 Binance spot via ccxt、真實 ticker、成交同步 |
 | **v0.3** | 真指標（TA-Lib / pandas-ta）、Funding/OI、新聞 RSS |
 | **v1.0** | 回測、多 bot、告警、手機 PWA 完善 |

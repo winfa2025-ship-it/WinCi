@@ -11,6 +11,7 @@
 - 最低名義 **1 美金**；倉位上限；日虧 kill-switch
 - 可選 **DeepSeek** AI 短評／信號微調；冇 key 紙上照常跑
 - **連線燈**：綠＝已連接，紅＝未設定（Auth／Binance／DeepSeek／Bot）
+- **短炒時框**：**1m／5m／15m**（圖表 K 線、信號節奏、Momentum／AutoEarn）
 
 ## AutoEarn
 

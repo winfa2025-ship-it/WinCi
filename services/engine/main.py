@@ -20,8 +20,17 @@ from bots.momentum import MomentumBot
 from bots.autoearn import AutoEarnBot, DISCLAIMER_ZH, DISCLAIMER_EN
 from ai.deepseek import DeepSeekClient
 from auth.router import router as auth_router
+from timeframes import (
+    TIMEFRAMES,
+    DEFAULT_TF,
+    normalize_tf,
+    tf_seconds,
+    loop_sleep_sec,
+    default_bot_cooldown,
+    candles_stub,
+)
 
-APP_VERSION = "0.1.1"
+APP_VERSION = "0.1.2"
 
 settings = get_settings()
 paper = PaperExchange(
@@ -41,6 +50,7 @@ bot = MomentumBot(paper)
 autoearn = AutoEarnBot(paper)
 _latest: dict = {}
 _cached_outbound_ip: dict = {"ip": None, "checkedAt": None, "error": None}
+_timeframe: str = DEFAULT_TF
 
 
 class OrderIn(BaseModel):
@@ -54,6 +64,7 @@ class OrderIn(BaseModel):
 class BotUpdate(BaseModel):
     enabled: Optional[bool] = None
     symbol: Optional[str] = None
+    timeframe: Optional[str] = None  # 1m | 5m | 15m
     buy_threshold: Optional[float] = None
     sell_threshold: Optional[float] = None
     order_notional_usd: Optional[float] = None
@@ -61,6 +72,10 @@ class BotUpdate(BaseModel):
     cooldown_sec: Optional[float] = None
     max_daily_loss_pct: Optional[float] = None
     kill_switch: Optional[bool] = None
+
+
+class TimeframeIn(BaseModel):
+    timeframe: str = DEFAULT_TF
 
 
 class ModeIn(BaseModel):
@@ -80,10 +95,12 @@ class WhitelistIn(BaseModel):
     ips: str = ""  # comma-separated
 
 
-def _refresh_snapshot(symbol: str = "BTCUSDT") -> dict:
+def _refresh_snapshot(symbol: str = "BTCUSDT", timeframe: Optional[str] = None) -> dict:
+    global _latest, _timeframe
+    tf = normalize_tf(timeframe or _timeframe)
     now = time.time()
     markets = paper.tick_prices(now)
-    results = evaluate_all(symbol, now)
+    results = evaluate_all(symbol, now, timeframe=tf)
     cons = consensus(results)
     boost = deepseek._last_boost if deepseek.configured else 0.0
     adj = round(cons["score"] + boost, 2)
@@ -94,12 +111,17 @@ def _refresh_snapshot(symbol: str = "BTCUSDT") -> dict:
         cons_adj["action"] = "sell"
     else:
         cons_adj["action"] = "hold"
+    px = markets.get(symbol, {}).get("price")
+    candles = candles_stub(symbol, tf, count=60, now=now, last_price=px)
     snap = {
         "ts": now,
         "mode": settings.MODE,
+        "timeframe": tf,
+        "timeframeSec": tf_seconds(tf),
         "markets": list(markets.values()),
         "symbol": symbol,
-        "price": markets.get(symbol, {}).get("price"),
+        "price": px,
+        "candles": candles,
         "signals": [r.__dict__ for r in results],
         "consensus": cons_adj,
         "portfolio": paper.portfolio(),
@@ -108,7 +130,6 @@ def _refresh_snapshot(symbol: str = "BTCUSDT") -> dict:
         "binance": binance.status(),
         "deepseek": deepseek.status(),
     }
-    global _latest
     _latest = snap
     return snap
 
@@ -118,7 +139,15 @@ async def lifespan(app: FastAPI):
     async def loop():
         while True:
             try:
-                snap = _refresh_snapshot(bot.cfg.symbol if bot.cfg.enabled else autoearn.cfg.symbol)
+                sym = bot.cfg.symbol if bot.cfg.enabled else autoearn.cfg.symbol
+                # prefer bot TF when that bot is running
+                if bot.cfg.enabled:
+                    tf = getattr(bot.cfg, "timeframe", None) or _timeframe
+                elif autoearn.cfg.enabled:
+                    tf = getattr(autoearn.cfg, "timeframe", None) or _timeframe
+                else:
+                    tf = _timeframe
+                snap = _refresh_snapshot(sym, timeframe=tf)
                 score = snap["consensus"]["score"]
                 if bot.cfg.enabled:
                     bot.tick(score)
@@ -126,7 +155,7 @@ async def lifespan(app: FastAPI):
                     autoearn.tick(score)
             except Exception:
                 pass
-            await asyncio.sleep(2.0)
+            await asyncio.sleep(loop_sleep_sec(_timeframe))
 
     task = asyncio.create_task(loop())
     yield
@@ -169,6 +198,9 @@ def api_status():
         "autoearnDisclaimerZh": DISCLAIMER_ZH,
         "autoearnDisclaimerEn": DISCLAIMER_EN,
         "symbols": SYMBOLS,
+        "timeframe": _timeframe,
+        "timeframes": list(TIMEFRAMES),
+        "timeframeSec": tf_seconds(_timeframe),
     }
 
 
@@ -177,13 +209,63 @@ def api_markets():
     return list(paper.tick_prices().values())
 
 
-@app.get("/api/signals")
-def api_signals(symbol: str = Query("BTCUSDT")):
+@app.get("/api/timeframe")
+def api_timeframe_get():
+    return {
+        "timeframe": _timeframe,
+        "timeframes": list(TIMEFRAMES),
+        "seconds": tf_seconds(_timeframe),
+        "botCooldownSec": default_bot_cooldown(_timeframe),
+    }
+
+
+@app.post("/api/timeframe")
+def api_timeframe_set(body: TimeframeIn):
+    """Set global short-trade TF (1m/5m/15m). Syncs bots unless they already match."""
+    global _timeframe
+    try:
+        tf = normalize_tf(body.timeframe)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    _timeframe = tf
+    # keep running bots on the same cadence unless user set separately later
+    bot.update(timeframe=tf)
+    autoearn.update(timeframe=tf)
+    return {
+        "ok": True,
+        "timeframe": _timeframe,
+        "seconds": tf_seconds(_timeframe),
+        "bot": bot.status(),
+        "autoearn": autoearn.status(),
+    }
+
+
+@app.get("/api/candles")
+def api_candles(
+    symbol: str = Query("BTCUSDT"),
+    timeframe: Optional[str] = Query(None),
+    limit: int = Query(60, ge=10, le=200),
+):
+    try:
+        tf = normalize_tf(timeframe or _timeframe)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
     now = time.time()
-    results = evaluate_all(symbol, now)
+    markets = paper.tick_prices(now)
+    px = markets.get(symbol, {}).get("price")
+    bars = candles_stub(symbol, tf, count=limit, now=now, last_price=px)
+    return {"symbol": symbol, "timeframe": tf, "candles": bars, "count": len(bars)}
+
+
+@app.get("/api/signals")
+def api_signals(symbol: str = Query("BTCUSDT"), timeframe: Optional[str] = Query(None)):
+    tf = normalize_tf(timeframe or _timeframe)
+    now = time.time()
+    results = evaluate_all(symbol, now, timeframe=tf)
     cons = consensus(results)
     return {
         "symbol": symbol,
+        "timeframe": tf,
         "ts": now,
         "consensus": cons,
         "signals": [r.__dict__ for r in results],
@@ -355,15 +437,22 @@ def api_binance_whitelist_set(body: WhitelistIn):
 
 
 @app.get("/api/sse/ticks")
-async def sse_ticks(symbol: str = Query("BTCUSDT")):
+async def sse_ticks(
+    symbol: str = Query("BTCUSDT"),
+    timeframe: Optional[str] = Query(None),
+):
     async def gen():
         while True:
-            snap = _refresh_snapshot(symbol)
+            tf = normalize_tf(timeframe or _timeframe)
+            snap = _refresh_snapshot(symbol, timeframe=tf)
             payload = {
                 "ts": snap["ts"],
                 "mode": snap["mode"],
+                "timeframe": snap["timeframe"],
+                "timeframeSec": snap["timeframeSec"],
                 "symbol": symbol,
                 "price": snap["price"],
+                "candles": snap["candles"][-40:],
                 "markets": snap["markets"],
                 "consensus": snap["consensus"],
                 "portfolio": snap["portfolio"],
@@ -374,7 +463,7 @@ async def sse_ticks(symbol: str = Query("BTCUSDT")):
                 "deepseekConfigured": deepseek.configured,
             }
             yield {"event": "tick", "data": json.dumps(payload)}
-            await asyncio.sleep(2.0)
+            await asyncio.sleep(loop_sleep_sec(tf))
 
     return EventSourceResponse(gen())
 

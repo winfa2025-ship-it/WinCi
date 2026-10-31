@@ -37,7 +37,15 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
 export const api = {
   status: () => req<any>('/api/status'),
   markets: () => req<any[]>('/api/markets'),
-  signals: (symbol: string) => req<any>(`/api/signals?symbol=${symbol}`),
+  signals: (symbol: string, timeframe?: string) =>
+    req<any>(`/api/signals?symbol=${encodeURIComponent(symbol)}${timeframe ? `&timeframe=${encodeURIComponent(timeframe)}` : ''}`),
+  getTimeframe: () => req<any>('/api/timeframe'),
+  setTimeframe: (timeframe: string) =>
+    req<any>('/api/timeframe', { method: 'POST', body: JSON.stringify({ timeframe }) }),
+  candles: (symbol: string, timeframe?: string, limit = 60) =>
+    req<any>(
+      `/api/candles?symbol=${encodeURIComponent(symbol)}&limit=${limit}${timeframe ? `&timeframe=${encodeURIComponent(timeframe)}` : ''}`,
+    ),
   portfolio: () => req<any>('/api/portfolio'),
   orders: () => req<any>('/api/orders'),
   order: (body: any) => req<any>('/api/order', { method: 'POST', body: JSON.stringify(body) }),
@@ -81,8 +89,10 @@ export const api = {
     }),
 }
 
-export function openTicks(symbol: string, onTick: (data: any) => void): () => void {
-  const es = new EventSource(`${BASE}/api/sse/ticks?symbol=${encodeURIComponent(symbol)}`)
+export function openTicks(symbol: string, onTick: (data: any) => void, timeframe?: string): () => void {
+  const qs = new URLSearchParams({ symbol })
+  if (timeframe) qs.set('timeframe', timeframe)
+  const es = new EventSource(`${BASE}/api/sse/ticks?${qs.toString()}`)
   es.addEventListener('tick', (ev) => {
     try {
       onTick(JSON.parse((ev as MessageEvent).data))

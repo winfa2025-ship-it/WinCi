@@ -17,25 +17,29 @@ class SignalResult:
     confidence: float  # 0 .. 1
     note: str
 
-def _seed_score(name: str, symbol: str, ts: float) -> float:
-    """Deterministic pseudo-score from symbol+name+time bucket."""
-    bucket = int(ts // 15)  # change every ~15s
-    h = hashlib.sha256(f"{name}:{symbol}:{bucket}".encode()).hexdigest()
+def _seed_score(name: str, symbol: str, ts: float, timeframe: str = "1m") -> float:
+    """Deterministic pseudo-score from symbol+name+timeframe bucket."""
+    from timeframes import bucket_ts, normalize_tf
+    tf = normalize_tf(timeframe)
+    bucket = bucket_ts(ts, tf)
+    h = hashlib.sha256(f"{name}:{symbol}:{tf}:{bucket}".encode()).hexdigest()
     raw = int(h[:8], 16) / 0xFFFFFFFF
-    # smooth-ish wave + noise
+    # smooth-ish wave + noise — cadence follows selected TF
     wave = math.sin(raw * math.pi * 2 + bucket * 0.1)
     score = max(-100.0, min(100.0, wave * 80 + (raw - 0.5) * 40))
     return round(score, 2)
 
-def evaluate_all(symbol: str, ts: float) -> List[SignalResult]:
+def evaluate_all(symbol: str, ts: float, timeframe: str = "1m") -> List[SignalResult]:
+    from timeframes import normalize_tf
+    tf = normalize_tf(timeframe)
     out: List[SignalResult] = []
     for i, (name, cat) in enumerate(zip(SIGNAL_NAMES, SIGNAL_CATEGORIES), start=1):
-        score = _seed_score(name, symbol, ts)
+        score = _seed_score(name, symbol, ts, tf)
         conf = round(0.4 + abs(score) / 200, 3)
         bias = "bullish" if score > 15 else ("bearish" if score < -15 else "neutral")
         out.append(SignalResult(
             id=i, name=name, category=cat, score=score,
-            confidence=min(1.0, conf), note=f"mock {bias}",
+            confidence=min(1.0, conf), note=f"mock {bias} · {tf}",
         ))
     return out
 

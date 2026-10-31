@@ -19,10 +19,11 @@ class AutoEarnConfig(BotConfig):
     name: str = "AutoEarn"
     enabled: bool = False
     symbol: str = "BTCUSDT"
+    timeframe: str = "1m"  # 1m | 5m | 15m
     buy_threshold: float = 20.0
     sell_threshold: float = -20.0
     order_notional_usd: float = 25.0  # position size USD per order
-    cooldown_sec: float = 20.0
+    cooldown_sec: float = 60.0  # default ≈ 1m bar
     max_daily_loss_pct: float = 5.0  # % of starting equity
     kill_switch: bool = False  # local kill (also respects exchange kill)
     starting_equity_ref: float = 0.0
@@ -66,6 +67,12 @@ class AutoEarnBot(MomentumBot):
         # map frontend aliases
         if "position_size_usd" in kwargs:
             kwargs["order_notional_usd"] = kwargs.pop("position_size_usd")
+        if "timeframe" in kwargs and kwargs["timeframe"] is not None:
+            from timeframes import normalize_tf, default_bot_cooldown
+            tf = normalize_tf(str(kwargs["timeframe"]))
+            kwargs["timeframe"] = tf
+            if "cooldown_sec" not in kwargs:
+                kwargs["cooldown_sec"] = default_bot_cooldown(tf)
         for k, v in kwargs.items():
             if hasattr(self.cfg, k) and k not in ("id", "kind"):
                 setattr(self.cfg, k, v)
