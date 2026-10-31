@@ -1,9 +1,31 @@
 const BASE = import.meta.env.VITE_API_BASE || ''
+const TOKEN_KEY = 'winci_token'
+
+export function getToken(): string | null {
+  try {
+    return localStorage.getItem(TOKEN_KEY)
+  } catch {
+    return null
+  }
+}
+
+export function setToken(token: string | null) {
+  try {
+    if (token) localStorage.setItem(TOKEN_KEY, token)
+    else localStorage.removeItem(TOKEN_KEY)
+  } catch {}
+}
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = getToken()
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(init?.headers as Record<string, string> || {}),
+  }
+  if (token) headers.Authorization = `Bearer ${token}`
   const r = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) },
     ...init,
+    headers,
   })
   if (!r.ok) {
     const t = await r.text()
@@ -32,6 +54,30 @@ export const api = {
     req<any>('/api/deepseek/commentary', {
       method: 'POST',
       body: JSON.stringify({ symbol, include_boost }),
+    }),
+  register: (email: string, password: string, display_name = '') =>
+    req<any>('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ email, password, display_name }),
+    }),
+  login: (email: string, password: string) =>
+    req<any>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    }),
+  google: (credential = 'demo') =>
+    req<any>('/auth/google', {
+      method: 'POST',
+      body: JSON.stringify({ credential }),
+    }),
+  me: () => req<any>('/auth/me'),
+  googleStatus: () => req<any>('/auth/google/status'),
+  outboundIp: () => req<any>('/api/binance/outbound-ip'),
+  getWhitelist: () => req<any>('/api/binance/whitelist'),
+  setWhitelist: (ips: string) =>
+    req<any>('/api/binance/whitelist', {
+      method: 'POST',
+      body: JSON.stringify({ ips }),
     }),
 }
 

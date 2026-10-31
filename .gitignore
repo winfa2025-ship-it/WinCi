@@ -15,3 +15,7 @@ services/engine/.pytest_cache/
 *.egg-info/
 .coverage
 htmlcov/
+# local auth / runtime db
+data/
+*.db
+services/engine/data/

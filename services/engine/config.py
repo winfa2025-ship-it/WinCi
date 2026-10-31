@@ -9,8 +9,16 @@ class Settings(BaseSettings):
     BINANCE_API_KEY: str = ""
     BINANCE_API_SECRET: str = ""
     BINANCE_TESTNET: bool = False
+    # Comma-separated IPs you will paste into Binance API Management whitelist
+    BINANCE_WHITELIST_IPS: str = ""
 
     DEEPSEEK_API_KEY: str = ""
+    DEEPSEEK_MODEL: str = "deepseek-chat"
+
+    # Auth (personal use)
+    JWT_SECRET: str = "winci-dev-change-me"  # set a long random string in .env
+    GOOGLE_CLIENT_ID: str = ""  # Google Identity Services client id; empty = demo Google login
+    WINCI_AUTH_DB: str = ""  # optional path; default data/winci_users.db
 
     MIN_NOTIONAL_USD: float = 1.0
     MAX_POSITION_USD: float = 500.0

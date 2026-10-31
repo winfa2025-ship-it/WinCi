@@ -11,10 +11,11 @@
 | **Markets** | 交易對列表、24h 漲跌、即時價（紙上模擬 tick 或幣安） |
 | **Chart** | K 線 stub（MVP 用簡易 sparkline；v2 接 TradingView widget） |
 | **Order** | 限價／市價買入賣出：數量 + 價錢；最低名義 $1 USD |
-| **Bots** | 機械人列表：啟停、策略、倉位上限、日虧 kill-switch |
+| **Bots** | Momentum + **AutoEarn**：啟停、倉位美金、日虧 %、kill-switch；免責「唔保證盈利」 |
+| **Login** | 電郵註冊／登入、Google（或 Demo Google）、訪客紙上 |
 | **Signals** | 100 個具名分析器分數板 + 共識分數 |
 | **Portfolio** | 持倉、未實現盈虧、成交紀錄、名義金額 |
-| **Settings** | paper/live 切換、API 狀態、風險參數 |
+| **Settings** | paper/live、帳號、DeepSeek、幣安 IP 白名單、**連線燈**（綠／紅） |
 
 ## 「100 AI」定義（誠實）
 
@@ -57,7 +58,7 @@ v2：多策略（mean-reversion、grid、DCA）、多交易對、回測。
 
 | Phase | Scope |
 |-------|--------|
-| **v0.1 MVP** | Paper exchange、100 signal stubs、1 momentum bot、Order ticket、SSE ticks、PWA UI |
+| **v0.1.1** | Paper + momentum + AutoEarn、email/Google auth、Binance IP whitelist helper、connection dots、DeepSeek optional |
 | **v0.2** | 真 Binance spot via ccxt、真實 ticker、成交同步 |
 | **v0.3** | 真指標（TA-Lib / pandas-ta）、Funding/OI、新聞 RSS |
 | **v1.0** | 回測、多 bot、告警、手機 PWA 完善 |
@@ -79,3 +80,24 @@ v2：多策略（mean-reversion、grid、DCA）、多交易對、回測。
   - Optional signal boost (−10…+10) added to consensus
 - **Paper mode works without the key** (stub commentary)
 - Not financial advice; personal use only
+
+
+## Auth (v0.1.1)
+
+- Email/password → SQLite + JWT（`JWT_SECRET`）
+- Google Identity：有 `GOOGLE_CLIENT_ID` 驗 ID token；否則 Demo Google
+- Endpoints: `/auth/register` `/auth/login` `/auth/google` `/auth/me`
+
+## AutoEarn (v0.1.1)
+
+Opt-in bot，延伸 momentum。參數：position size USD、max daily loss %、kill switch。  
+**唔保證盈利／過去表現唔代表將來。** 預設 paper。
+
+## Binance IP whitelist
+
+- `.env` `BINANCE_WHITELIST_IPS`（逗號分隔）＝備忘
+- `GET /api/binance/outbound-ip`（或 `/binance/outbound-ip`）偵測引擎對外 IP，貼去幣安 API 管理 → IP 存取限制
+
+## Connection indicators
+
+Header + Settings：Auth / Binance / DeepSeek / Bot — **綠＝已連接，紅＝未設定／停**。
